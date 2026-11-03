@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
+  --color-canvas: #090e20;
+  --color-surface: #10172c;
+  --color-raised: #18223b;
+  --color-ink: #f6f0df;
+  --color-body: #dddfea;
+  --color-muted: #a2abc3;
+  --color-line: #303c5c;
+  --color-accent: #d3ad57;
+  --color-accent-hover: #e7c97e;
+}
+
+/* Shared text, form spacing and table defaults. Components own control styles;
+   pages keep only their layout utilities. */
+@layer base {
+  html {
+    @apply bg-canvas font-sans text-[15px] leading-relaxed text-body antialiased;
+    color-scheme: dark;
+  }
+  #root {
+    @apply flex min-h-svh flex-col;
+  }
+  a {
+    @apply text-accent underline underline-offset-4 hover:text-accent-hover;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-serif;
+  }
+  :is(h1, h2, h3, h4, h5, h6) a {
+    @apply text-inherit hover:text-accent;
+  }
+  h1 {
+    @apply mb-2 text-3xl leading-tight font-semibold tracking-tight text-ink wrap-anywhere max-sm:text-2xl;
+  }
+  h2 {
+    @apply mb-3 text-lg leading-snug font-semibold text-ink wrap-anywhere;
+  }
+  h3 {
+    @apply mb-2 text-base font-semibold text-ink wrap-anywhere;
+  }
+  p {
+    @apply mb-4 last:mb-0;
+  }
+  label {
+    @apply mb-1.5 block text-sm font-medium;
+  }
+  form {
+    @apply max-w-[650px];
+  }
+  fieldset {
+    @apply mb-4 min-w-0;
+  }
+  legend {
+    @apply mb-4 font-medium;
+  }
+  form p {
+    @apply text-sm;
+  }
+  ul {
+    @apply list-disc pl-6;
+  }
+  li + li {
+    @apply mt-2;
+  }
+  [role="alert"] {
+    @apply my-4 rounded-md border border-red-400/25 bg-red-400/10 px-4 py-3 text-red-300;
+  }
+  [role="status"] {
+    @apply text-muted;
+  }
+  table {
+    @apply w-full border-collapse text-left text-sm;
+  }
+  th,
+  td {
+    @apply border-b border-line px-4 py-3 align-top wrap-anywhere;
+  }
+  th {
+    @apply font-medium;
+  }
+  thead {
+    @apply bg-raised text-muted;
+  }
+  tbody tr:last-child > * {
+    @apply border-b-0;
+  }
+  caption {
+    @apply px-4 py-3 text-left text-xs text-muted;
+  }
+  td select {
+    @apply min-w-[150px];
+  }
+  td p {
+    @apply my-1;
+  }
+  dl {
+    @apply mb-5 grid grid-cols-[minmax(100px,1fr)_2fr] gap-x-4 gap-y-3 max-sm:grid-cols-[1fr_1.5fr];
+  }
+  dt {
+    @apply text-sm text-muted;
+  }
+  dd {
+    @apply min-w-0 wrap-anywhere;
+  }
+  :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    @apply outline-2 outline-offset-4 outline-accent;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      scroll-behavior: auto !important;
+      transition: none !important;
+    }
+  }
+}

@@ -1,0 +1,296 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Event {
+  id               String    @id @default(uuid())
+  title            String
+  description      String?
+  bannerUrl        String?
+  headingColor     String?
+  venue            String
+  publishedAt      DateTime?
+  cateringDeadline DateTime?
+  startsAt         DateTime
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  societyId          String
+  society            Society           @relation(fields: [societyId], references: [id], onDelete: Restrict)
+  capacity           Int?
+  ticketTypes        TicketType[]
+  bookings           Booking[]
+  mealOptions        MealOption[]
+  tableGroups        TableGroup[]
+  seatingPublishedAt DateTime?
+  scanAccess         EventScanAccess[]
+  salesClosed        Boolean           @default(false)
+  tables             EventTable[]
+  cancelledAt        DateTime?
+
+  @@index([societyId])
+}
+
+model User {
+  id                 String            @id
+  name               String
+  email              String
+  emailVerified      Boolean           @default(false)
+  image              String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  sessions           Session[]
+  accounts           Account[]
+  memberships        Membership[]
+  bookings           Booking[]
+  scanAccess         EventScanAccess[]
+  createdTableGroups TableGroup[]      @relation("CreatedTableGroups")
+
+  @@unique([email])
+  @@map("user")
+}
+
+model EventScanAccess {
+  eventId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, userId])
+  @@index([userId])
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+enum MembershipRole {
+  MEMBER
+  ORGANISER
+}
+
+model Society {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships Membership[]
+  events      Event[]
+}
+
+model Membership {
+  id        String         @id @default(uuid())
+  userId    String
+  societyId String
+  role      MembershipRole @default(MEMBER)
+  createdAt DateTime       @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  society Society @relation(fields: [societyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, societyId])
+  @@index([societyId])
+}
+
+enum TicketTier {
+  STANDARD
+  VIP
+}
+
+model TicketType {
+  id           String        @id @default(uuid())
+  eventId      String
+  tier         TicketTier
+  pricePence   Int
+  capacity     Int
+  salesStart   DateTime
+  salesEnd     DateTime
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  bookingItems BookingItem[]
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  @@unique([eventId, tier])
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  EXPIRED
+  CANCELLED
+}
+
+model Booking {
+  id                 String        @id @default(uuid())
+  userId             String
+  eventId            String
+  status             BookingStatus @default(PENDING)
+  totalPence         Int
+  expiresAt          DateTime
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  requestKey         String
+  lastTicketEmailAt  DateTime?
+  simulatedPaymentAt DateTime?
+  requestHash        String
+
+  user  User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  event Event         @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  items BookingItem[]
+
+  @@unique([userId, requestKey])
+  @@index([userId, createdAt])
+  @@index([userId, eventId, status, expiresAt])
+  @@index([eventId, status])
+  @@index([status, expiresAt])
+}
+
+model BookingItem {
+  id             String         @id @default(uuid())
+  bookingId      String
+  ticketTypeId   String
+  quantity       Int
+  unitPricePence Int
+  guests         BookingGuest[]
+  booking        Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  ticketType     TicketType     @relation(fields: [ticketTypeId], references: [id], onDelete: Restrict)
+
+  @@unique([bookingId, ticketTypeId])
+  @@index([ticketTypeId])
+}
+
+model BookingGuest {
+  id                  String      @id @default(uuid())
+  bookingItemId       String
+  position            Int
+  fullName            String?
+  dietaryRequirements String?
+  accessibilityNeeds  String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  mealOptionId        String?
+  mealOption          MealOption? @relation(fields: [mealOptionId], references: [id], onDelete: Restrict)
+  assignedTableId     String?
+  assignedTable       EventTable? @relation(fields: [assignedTableId], references: [id], onDelete: SetNull)
+
+  bookingItem  BookingItem @relation(fields: [bookingItemId], references: [id], onDelete: Cascade)
+  tableGroupId String?
+  tableGroup   TableGroup? @relation(fields: [tableGroupId], references: [id], onDelete: SetNull)
+  ticket       Ticket?
+
+  @@unique([bookingItemId, position])
+  @@index([tableGroupId])
+  @@index([mealOptionId])
+  @@index([assignedTableId])
+}
+
+model Ticket {
+  id          String    @id @default(uuid())
+  guestId     String    @unique
+  token       String    @unique
+  createdAt   DateTime  @default(now())
+  revokedAt   DateTime?
+  checkedInAt DateTime?
+
+  guest BookingGuest @relation(fields: [guestId], references: [id], onDelete: Restrict)
+}
+
+model MealOption {
+  id          String   @id @default(uuid())
+  eventId     String
+  name        String
+  description String?
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  event  Event          @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  guests BookingGuest[]
+
+  @@unique([eventId, name])
+}
+
+model TableGroup {
+  id         String   @id @default(uuid())
+  eventId    String
+  creatorId  String
+  name       String
+  inviteCode String   @unique
+  maxSize    Int      @default(10)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  event   Event          @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  creator User           @relation("CreatedTableGroups", fields: [creatorId], references: [id], onDelete: Restrict)
+  guests  BookingGuest[]
+
+  @@index([eventId])
+  @@index([creatorId])
+}
+
+model EventTable {
+  id        String   @id @default(uuid())
+  eventId   String
+  name      String
+  capacity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event  Event          @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  guests BookingGuest[]
+
+  @@unique([eventId, name])
+}

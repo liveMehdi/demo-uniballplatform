@@ -1,0 +1,43 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "build:app": "npm --prefix ../client run build && npm run build",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "setup:society": "tsx src/scripts/setupSociety.ts",
+    "dev:worker": "tsx watch src/worker.ts",
+    "start:worker": "node dist/worker.js",
+    "test:email": "tsx src/scripts/testEmail.ts",
+    "email:check": "node dist/scripts/checkEmail.js",
+    "email:status": "node dist/scripts/emailStatus.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@better-auth/prisma-adapter": "^1.7.10",
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
+    "better-auth": "^1.7.10",
+    "dotenv": "^18.0.8",
+    "express": "^5.3.0",
+    "nodemailer": "^10.2.1",
+    "pg": "^8.23.1",
+    "pg-boss": "^12.38.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "@types/pg": "^8.23.1",
+    "prisma": "^7.10.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
