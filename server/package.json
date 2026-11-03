@@ -11,6 +11,7 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "setup:society": "tsx src/scripts/setupSociety.ts",
+    "setup:societies": "tsx src/scripts/setupSocieties.ts",
     "dev:worker": "tsx watch src/worker.ts",
     "start:worker": "node dist/worker.js",
     "test:email": "tsx src/scripts/testEmail.ts",
