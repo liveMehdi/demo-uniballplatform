@@ -116,7 +116,9 @@ function ReservationForm({
     try {
       sessionStorage.removeItem(storageKey);
       setRecovery({ attempt: null, error: "" });
-    } catch {}
+    } catch {
+      // Retain the recovery request if storage becomes unavailable.
+    }
   }
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {

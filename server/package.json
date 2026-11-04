@@ -10,6 +10,10 @@
     "build:app": "npm --prefix ../client run build && npm run build",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
+    "typecheck:tests": "tsc --project tests/tsconfig.json",
+    "test": "tsx tests/run.ts integration",
+    "test:e2e": "tsx tests/run.ts e2e",
+    "test:prepare": "tsx tests/run.ts prepare",
     "setup:society": "tsx src/scripts/setupSociety.ts",
     "setup:societies": "tsx src/scripts/setupSocieties.ts",
     "dev:worker": "tsx watch src/worker.ts",
@@ -34,6 +38,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.5",
     "@types/pg": "^8.23.1",

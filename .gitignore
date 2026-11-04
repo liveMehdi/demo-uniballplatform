@@ -26,3 +26,7 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+.test-postgres/
+playwright-report/
+test-results/
