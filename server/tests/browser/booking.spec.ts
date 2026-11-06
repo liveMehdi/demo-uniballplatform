@@ -7,7 +7,10 @@ test.afterAll(async () => {
   await prisma.$disconnect();
 });
 
-test("demo button fills an existing organiser account and waits for sign in", async ({ page, request }) => {
+test("demo button fills an existing organiser account and waits for sign in", async ({
+  page,
+  request,
+}) => {
   const fixtures = createFixtures();
   const email = "demo-browser@example.test";
 
@@ -21,13 +24,19 @@ test("demo button fills an existing organiser account and waits for sign in", as
     await fixtures.event(user.id);
 
     await page.goto("/login");
-    await expect(page.getByText("Changes are visible to everyone", { exact: false })).toBeVisible();
+    await expect(
+      page.getByText("Changes are visible to everyone", { exact: false }),
+    ).toBeVisible();
     await expect(page.getByLabel("Email", { exact: true })).toHaveValue("");
     await expect(page.getByLabel("Password", { exact: true })).toHaveValue("");
 
-    await page.getByRole("button", { name: "Use demo account" }).click();
+    await page
+      .getByRole("button", { name: "Use demo admin account", exact: true })
+      .click();
     await expect(page.getByLabel("Email", { exact: true })).toHaveValue(email);
-    await expect(page.getByLabel("Password", { exact: true })).toHaveValue(fixturePassword);
+    await expect(page.getByLabel("Password", { exact: true })).toHaveValue(
+      fixturePassword,
+    );
     await expect(page).toHaveURL(/\/login$/);
 
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
@@ -78,7 +87,7 @@ test("attendee reserves, saves guest details, completes demo checkout and views 
     await page
       .getByRole("link", { name: "Add guest details", exact: true })
       .click();
-      
+
     await expect(page).toHaveURL(/\/bookings\/[^/]+\/guests$/);
     await expect(
       page.getByRole("button", { name: "Complete demo booking" }),
