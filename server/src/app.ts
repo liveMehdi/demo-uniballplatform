@@ -2,6 +2,7 @@ import express from "express";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth.js";
 import { emailEnabled } from "./lib/emailConfig.js";
+import { demoAccount } from "./lib/demoAccount.js";
 import { frontendRouter } from "./middleware/frontend.js";
 import eventsRouter from "./modules/events/events.routes.js";
 import societiesRouter from "./modules/societies/societies.routes.js";
@@ -53,7 +54,7 @@ app.use(express.json());
 
 app.get("/api/config", (_req, res) => {
   res.setHeader("Cache-Control", "no-store");
-  res.json({ emailEnabled: emailEnabled() });
+  res.json({ emailEnabled: emailEnabled(), demoAccount: demoAccount() });
 });
 
 app.get("/api/health", (_req, res) => {

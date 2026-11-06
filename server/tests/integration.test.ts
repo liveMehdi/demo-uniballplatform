@@ -641,3 +641,91 @@ test("cancellation: bookings, tickets and notifications change together and furt
     [confirmedId, pendingId].sort(),
   );
 });
+
+test("shared demo credentials stay usable and ordinary accounts can change and reset passwords", async () => {
+  const demoUser = await prisma.user.findUniqueOrThrow({ where: { id: organiser.id } });
+  const normalUser = await prisma.user.findUniqueOrThrow({ where: { id: outsider.id } });
+  const newPassword = "Updated-test-password-123!";
+
+  assert.equal((await api("/config")).body.demoAccount, null);
+
+  // issue a real reset link before protecting the account
+  assert.equal((await api("/auth/request-password-reset", undefined, "POST", {
+    email: demoUser.email,
+  })).status, 200);
+
+  const oldReset = await prisma.verification.findFirstOrThrow({
+    where: { value: organiser.id, identifier: { startsWith: "reset-password:" } },
+  });
+  const oldToken = oldReset.identifier.slice("reset-password:".length);
+
+  process.env.DEMO_EMAIL = demoUser.email.toUpperCase();
+  process.env.DEMO_PASSWORD = fixturePassword;
+
+  try {
+    const config = await api("/config");
+    assert.equal(config.headers.get("cache-control"), "no-store");
+    assert.deepEqual(config.body.demoAccount, { email: demoUser.email, password: fixturePassword });
+
+    const blocked = await api("/auth/change-password", organiser, "POST", {
+      currentPassword: fixturePassword,
+      newPassword,
+      revokeOtherSessions: true,
+    });
+    assert.equal(blocked.status, 403);
+    assert.equal(blocked.body.code, "DEMO_ACCOUNT_PROTECTED");
+
+    assert.equal((await api("/auth/request-password-reset", undefined, "POST", {
+      email: demoUser.email.toUpperCase(),
+    })).status, 403);
+
+    for (const path of ["/auth/reset-password", `/auth/reset-password?token=${oldToken}`]) {
+      const result = await api(path, undefined, "POST", {
+        newPassword,
+        ...(path.includes("?") ? {} : { token: oldToken }),
+      });
+      assert.equal(result.status, 403);
+      assert.equal(result.body.code, "DEMO_ACCOUNT_PROTECTED");
+    }
+
+    const callback = await fetch(
+      `${testOrigin}/api/auth/reset-password/${oldToken}?callbackURL=${encodeURIComponent(testOrigin + "/reset-password")}`,
+      { redirect: "manual" },
+    );
+    assert.equal(callback.status, 403);
+
+    const signIn = await api("/auth/sign-in/email", undefined, "POST", {
+      email: demoUser.email,
+      password: fixturePassword,
+    });
+    assert.equal(signIn.status, 200);
+    assert.equal(signIn.body.user.id, organiser.id);
+
+    assert.equal((await api("/auth/change-password", outsider, "POST", {
+      currentPassword: fixturePassword,
+      newPassword,
+    })).status, 200);
+
+    assert.equal((await api("/auth/request-password-reset", undefined, "POST", {
+      email: normalUser.email,
+    })).status, 200);
+
+    const normalReset = await prisma.verification.findFirstOrThrow({
+      where: { value: outsider.id, identifier: { startsWith: "reset-password:" } },
+    });
+
+    assert.equal((await api("/auth/reset-password", undefined, "POST", {
+      token: normalReset.identifier.slice("reset-password:".length),
+      newPassword: fixturePassword,
+    })).status, 200);
+
+    assert.equal((await api("/auth/sign-in/email", undefined, "POST", {
+      email: normalUser.email,
+      password: fixturePassword,
+    })).status, 200);
+  } finally {
+    process.env.DEMO_EMAIL = "";
+    process.env.DEMO_PASSWORD = "";
+    await prisma.verification.deleteMany({ where: { value: { in: [organiser.id, outsider.id] } } });
+  }
+});

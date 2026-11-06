@@ -1,8 +1,13 @@
 import "dotenv/config";
 import { betterAuth } from "better-auth";
-import { APIError, createAuthMiddleware } from "better-auth/api";
+import {
+  APIError,
+  createAuthMiddleware,
+  getSessionFromCtx,
+} from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma.js";
+import { demoAccount } from "./demoAccount.js";
 import {
   appOrigin,
   emailEnabled,
@@ -21,6 +26,7 @@ if (!baseURL || !secret) {
 }
 
 validateEmailConfiguration();
+demoAccount();
 
 export const auth = betterAuth({
   baseURL,
@@ -57,7 +63,60 @@ export const auth = betterAuth({
     : undefined,
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
-      // blocking direct API calls too including links given before demo mdoe
+      const demo = demoAccount();
+
+      if (demo) {
+        const isDemo = (email: unknown) =>
+          typeof email === "string" && email.trim().toLowerCase() === demo.email;
+        let protectedAccount = false;
+
+        if (ctx.path === "/request-password-reset") {
+          protectedAccount = isDemo(ctx.body?.email);
+        }
+
+        if (
+          [
+            "/change-password",
+            "/set-password",
+            "/change-email",
+            "/delete-user",
+            "/unlink-account",
+          ].includes(ctx.path)
+        ) {
+          const session = await getSessionFromCtx(ctx);
+          protectedAccount = isDemo(session?.user.email);
+        }
+
+        // also reject reset links issued before demo access was enabled
+        if (
+          ctx.path === "/reset-password" ||
+          ctx.path.startsWith("/reset-password/")
+        ) {
+          const token = ctx.body?.token || ctx.query?.token || ctx.params?.token;
+
+          if (typeof token === "string") {
+            const verification =
+              await ctx.context.internalAdapter.findVerificationValue(
+                `reset-password:${token}`,
+              );
+            const user = verification
+              ? await ctx.context.internalAdapter.findUserById(verification.value)
+              : null;
+
+            protectedAccount = isDemo(user?.email);
+          }
+        }
+
+        if (protectedAccount) {
+          throw new APIError("FORBIDDEN", {
+            code: "DEMO_ACCOUNT_PROTECTED",
+            message:
+              "The shared demo account's login details cannot be changed or reset.",
+          });
+        }
+      }
+
+      // block email endpoints when email delivery is disabled
       const emailRoute =
         [
           "/request-password-reset",

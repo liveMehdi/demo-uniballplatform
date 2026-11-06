@@ -7,7 +7,7 @@ import type { SubmitEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { authClient } from "../../lib/auth-client";
-import { useEmailAvailability } from "../../features/auth/useEmailAvailability";
+import { useAppConfig } from "../../features/auth/useAppConfig";
 
 type Props = {
   mode: "login" | "register";
@@ -19,16 +19,19 @@ export default function AuthPage({ mode }: Props) {
   const registering = mode === "register";
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const emailAvailability = useEmailAvailability();
-  const emailEnabled = emailAvailability.data === true;
+  const appConfig = useAppConfig();
+  const emailEnabled = appConfig.data?.emailEnabled === true;
+  const demo = appConfig.data?.demoAccount;
 
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (registering && emailAvailability.data === undefined) return;
+    if (registering && appConfig.data === undefined) return;
 
     const formData = new FormData(event.currentTarget);
     const email = String(formData.get("email") ?? "");
@@ -96,12 +99,39 @@ export default function AuthPage({ mode }: Props) {
             : "Sign in to access your bookings and tickets."}
         </p>
       </header>
+      {!registering && demo && (
+        <section
+          aria-labelledby="demo-heading"
+          className="mb-6 rounded-lg border border-line bg-surface p-4"
+        >
+          <h2 id="demo-heading" className="text-lg font-semibold">
+            Try the demo
+          </h2>
+          <p className="mt-2 text-sm text-muted">
+            Explore with a shared organiser account. Changes are visible to
+            everyone, so please use sample data only.
+          </p>
+          <Button
+            type="button"
+            variant="secondary"
+            className="mt-3"
+            disabled={pending}
+            onClick={() => {
+              setEmail(demo.email);
+              setPassword(demo.password);
+              setShowPassword(false);
+              setError(null);
+            }}
+          >
+            Use demo admin account
+          </Button>
+          <p className="mt-2 text-sm text-muted">Then select Sign in below.</p>
+        </section>
+      )}
       <form className="w-full max-w-none" onSubmit={handleSubmit}>
         <fieldset
           className="mb-0"
-          disabled={
-            pending || (registering && emailAvailability.data === undefined)
-          }
+          disabled={pending || (registering && appConfig.data === undefined)}
         >
           <legend className="sr-only">
             {registering ? "Registration details" : "Sign-in details"}
@@ -126,6 +156,8 @@ export default function AuthPage({ mode }: Props) {
               id="email"
               name="email"
               type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               autoComplete="email"
               placeholder="you@example.com"
               className="min-h-12"
@@ -140,6 +172,8 @@ export default function AuthPage({ mode }: Props) {
                 id="password"
                 name="password"
                 type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
                 minLength={registering ? 8 : undefined}
                 maxLength={128}
                 autoComplete={registering ? "new-password" : "current-password"}
@@ -183,16 +217,16 @@ export default function AuthPage({ mode }: Props) {
         </fieldset>
 
         {error && <p role="alert">{error}</p>}
-        {registering && emailAvailability.isPending && (
+        {registering && appConfig.isPending && (
           <p role="status">Loading app settings...</p>
         )}
-        {emailAvailability.isError && (
+        {appConfig.isError && (
           <p role="alert">
-            Could not load email settings.{" "}
+            Could not load app settings.{" "}
             <Button
               variant="secondary"
               type="button"
-              onClick={() => void emailAvailability.refetch()}
+              onClick={() => void appConfig.refetch()}
             >
               Try again
             </Button>

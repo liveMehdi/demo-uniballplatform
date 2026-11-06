@@ -37,6 +37,8 @@ process.env.BETTER_AUTH_URL = "http://127.0.0.1:4318";
 process.env.APP_URL = "http://127.0.0.1:4318";
 
 process.env.AUTH_REQUIRE_EMAIL_VERIFICATION = "false";
+process.env.DEMO_EMAIL = "";
+process.env.DEMO_PASSWORD = "";
 process.env.EMAIL_MODE = "disabled";
 process.env.EMAIL_FROM = "tests@example.test";
 process.env.SMTP_URL = "smtp://127.0.0.1:1";

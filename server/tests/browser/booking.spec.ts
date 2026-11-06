@@ -7,6 +7,39 @@ test.afterAll(async () => {
   await prisma.$disconnect();
 });
 
+test("demo button fills an existing organiser account and waits for sign in", async ({ page, request }) => {
+  const fixtures = createFixtures();
+  const email = "demo-browser@example.test";
+
+  try {
+    const response = await request.post("/api/auth/sign-up/email", {
+      data: { name: "Demo organiser", email, password: fixturePassword },
+    });
+    expect(response.ok()).toBe(true);
+    const { user } = await response.json();
+    fixtures.userIds.push(user.id);
+    await fixtures.event(user.id);
+
+    await page.goto("/login");
+    await expect(page.getByText("Changes are visible to everyone", { exact: false })).toBeVisible();
+    await expect(page.getByLabel("Email", { exact: true })).toHaveValue("");
+    await expect(page.getByLabel("Password", { exact: true })).toHaveValue("");
+
+    await page.getByRole("button", { name: "Use demo account" }).click();
+    await expect(page.getByLabel("Email", { exact: true })).toHaveValue(email);
+    await expect(page.getByLabel("Password", { exact: true })).toHaveValue(fixturePassword);
+    await expect(page).toHaveURL(/\/login$/);
+
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await expect(page).toHaveURL(/\/events$/);
+
+    const session = await page.request.get("/api/auth/get-session");
+    expect((await session.json()).user.id).toBe(user.id);
+  } finally {
+    await fixtures.cleanup();
+  }
+});
+
 test("attendee reserves, saves guest details, completes demo checkout and views a persistent QR ticket", async ({
   page,
 }) => {

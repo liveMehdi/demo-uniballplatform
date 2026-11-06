@@ -3,6 +3,10 @@ import app from "../src/app.js";
 import { boss } from "../src/lib/jobs.js";
 import { prisma } from "../src/lib/prisma.js";
 import { registerReservationExpiry } from "../src/jobs/expireReservations.js";
+import { fixturePassword } from "./fixtures.js";
+
+process.env.DEMO_EMAIL = "demo-browser@example.test";
+process.env.DEMO_PASSWORD = fixturePassword;
 
 await boss.start();
 await registerReservationExpiry();
