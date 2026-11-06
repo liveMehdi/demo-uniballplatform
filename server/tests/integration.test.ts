@@ -255,15 +255,36 @@ test(
         tierCapacity: 1,
       });
 
-      const results = await race("Event", event.id, [
-        () => reserve(event, alice),
-        () => reserve(event, bob, 1, randomUUID(), limit === "event" ? 1 : 0),
-      ]);
+      const aliceKey = randomUUID();
+      const bobKey = randomUUID();
+      const operations = [
+        () => reserve(event, alice, 1, aliceKey),
+        () => reserve(event, bob, 1, bobKey, limit === "event" ? 1 : 0),
+      ];
+      const results = await race("Event", event.id, operations);
+
+      assert.equal(
+        results.filter((result) => result.status === 201).length,
+        1,
+        JSON.stringify(results),
+      );
+
+      // contention can exhaust the server's bounded transaction retries
+      // retry that request once after the race, keeping its original key
+      const settled = [...results];
+
+      for (const [index, result] of results.entries()) {
+        if (result.status !== 503) continue;
+
+        assert.equal(result.body.error, "Booking is busy. Please try again.");
+        settled[index] = await operations[index]!();
+        assert.equal(settled[index]!.status, 409, JSON.stringify(settled[index]));
+      }
 
       assert.deepEqual(
-        results.map((r) => r.status).sort(),
+        settled.map((r) => r.status).sort(),
         [201, 409],
-        JSON.stringify(results),
+        JSON.stringify({ initial: results, settled }),
       );
 
       const saved = await prisma.booking.findMany({
