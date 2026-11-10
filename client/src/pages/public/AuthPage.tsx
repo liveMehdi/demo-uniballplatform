@@ -1,6 +1,6 @@
 import AuthLayout from "../../features/auth/components/AuthLayout";
 import { authPath, safeReturnPath } from "../../features/auth/returnPath";
-import { Button } from "../../components/ui/Button";
+import { Button, LinkButton } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Fields";
 import { useState } from "react";
 import type { SubmitEvent } from "react";
@@ -99,6 +99,23 @@ export default function AuthPage({ mode }: Props) {
             : "Sign in to access your bookings and tickets."}
         </p>
       </header>
+      {registering && demo && (
+        <section
+          aria-labelledby="register-demo-heading"
+          className="mb-6 rounded-lg border border-line bg-surface p-4"
+        >
+          <h2 id="register-demo-heading" className="text-lg font-semibold">
+            Try it before signing up
+          </h2>
+          <p className="mt-2 text-sm text-muted">
+            Explore the admin features with a shared demo admin account.
+            Changes are visible to everyone, so please use sample data only.
+          </p>
+          <LinkButton to={authPath("login", returnTo)} className="mt-3">
+            Try the demo <span aria-hidden="true">→</span>
+          </LinkButton>
+        </section>
+      )}
       {!registering && demo && (
         <section
           aria-labelledby="demo-heading"
@@ -108,8 +125,8 @@ export default function AuthPage({ mode }: Props) {
             Try the demo
           </h2>
           <p className="mt-2 text-sm text-muted">
-            Explore with a shared organiser account. Changes are visible to
-            everyone, so please use sample data only.
+            Explore the admin features with a shared demo admin account.
+            Changes are visible to everyone, so please use sample data only.
           </p>
           <Button
             type="button"

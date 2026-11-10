@@ -1,6 +1,6 @@
 # University Event & Ticketing Platform
 
-This is a demo version of a full stack application used to manage university society events, balls and formal dinners. Payment and emailing functionality is disabled.
+This is a demo version of a full stack application used to manage university society events, balls and formal dinners. Payment and emailing functionality is disabled. You can login with the demo admin account on the login page.
 
 ## Features
 
